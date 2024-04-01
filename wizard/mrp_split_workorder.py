@@ -26,6 +26,8 @@ class MrpSplitWorkOrder(models.TransientModel):
                 self.workcenter_id = workorder[0].operation_id.workcenter_id
                 self.workcenter_capacity = workorder[0].operation_id.workcenter_id.capacity
                     
+
+    """Masih memiliki kekeliruan pada rumus dalam melakukan pembagian / split work order"""                
     def action_split_workorder(self):
         for record in self:
             if record.qty_to_split <= 0:
