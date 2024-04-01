@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_mrp_production_split_multi,access.mrp.production.split.multi,model_mrp_production_split_multi,mrp.group_mrp_user,1,1,1,1
+access_mrp_split_work.order,mrp.split.work.order,model_mrp_split_work_order,base.group_user,1,1,1,1
+access_mrp_production_split_line,mrp.production.split.line,model_mrp_production_split_line,base.group_user,1,1,1,1
