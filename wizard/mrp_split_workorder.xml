@@ -14,7 +14,7 @@
                         <field name="workcenter_id"/>
                     </group>
                     <group name="workcenter_capacity">
-                        <field name="workcenter_capacity" readonly="1"/>
+                        <field name="workcenter_capacity"/>
                     </group>
                     <group name="quantity_split">
                         <field name="qty_to_split"/>
