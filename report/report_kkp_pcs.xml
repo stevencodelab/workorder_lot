@@ -36,7 +36,7 @@
                                 </div>
                             </div>
                         </div>
-                        <table class="table table-sm-striped">
+                        <table class="table table-sm table-striped">
                             <thead>
                                 <tr>
                                     <th style="background-color:  #3498DB;">Nama Artikel</th>
@@ -49,7 +49,19 @@
                             <tbody>
                                 <tr>
                                     <td>
-                                        
+                                        <span t-field="doc.product_id"/>
+                                    </td>
+                                    <td>
+                                        <span t-field="doc.product_qty"/>
+                                    </td>
+                                    <td>
+                                        <span t-field="doc.product_qty"/>
+                                    </td>
+                                    <td>
+                                        <span t-field="doc.product_qty"/>
+                                    </td>
+                                    <td>
+                                        <span t-field="doc.product_qty"/>
                                     </td>
                                 </tr>
                             </tbody>
