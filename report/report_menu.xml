@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_report_kkp_pieces" model="ir.actions.report">
+            <field name="name">Report KKP Pieces</field>
+            <field name="model">mrp.production</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">workorder_lot.report_kkp_pieces</field>
+            <field name="report_file">workorder_lot.report.kkp_pieces_report</field>
+            <field name="print_report_name">'KKP PIECES - %s' % object.name</field>
+            <field name="binding_model_id" ref="mrp.model_mrp_production"/>
+            <field name="binding_type">report</field>
+        </record>
+     </data> 
+</odoo>  

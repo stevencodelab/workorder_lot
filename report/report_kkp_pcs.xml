@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+<template id="report_kkp_pieces">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h5 style="text-alignt:left; font-size:18px; font-weight:bold; font-variant: small-caps;"></h5>
+                        <div style=" background-color:  #3498DB; "> 
+                            <div style=" background-color:  #3498DB;">
+                                <div class="row">
+                                        <div class="col-3">
+                                            <font color="#fff">
+                                                <strong>Document ID :</strong>
+                                                
+                                            </font>
+                                        </div>
+                                        <div class="col-3">
+                                            <font color="#fff">
+                                                <strong>Page :</strong>
+                                               
+                                            </font>
+                                        </div>
+                                        <div class="col-3">
+                                            <font color="#fff">
+                                                <strong>Revision No :</strong>
+                                                
+                                            </font>
+                                        </div>
+                                        <div class="col-3">
+                                            <font color="#fff">
+                                                <strong>Revision Date :</strong>
+                                               
+                                            </font>
+                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        <table class="table table-sm-striped">
+                            <thead>
+                                <tr>
+                                    <th style="background-color:  #3498DB;">Nama Artikel</th>
+                                    <th style="background-color:  #3498DB;">Customer</th>
+                                    <th style="background-color:  #3498DB;">Style</th>
+                                    <th style="background-color:  #3498DB;">Size</th>
+                                    <th style="background-color:  #3498DB;">Warna</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div style="padding-top:10px;">
+                        <table class="table table-sm table-striped table-bordered">
+                            <thead style="display:table-row-group;">
+                               
+                            </thead>
+                            <tbody class="snap_tbody">
+                               
+                            </tbody>
+                            <tfoot class="tabel table-sm table-dark table-bordered" style="display:table-row-group;">
+                              
+                             
+                            </tfoot>
+                        </table>
+                </div>
+                <xpath expr="//p[@t-field='o.notes']" position="after">
+                    <div class="last-page" style="position:relative;font-size:12px;margin-top:100px;">
+                    <table>
+                        <tr>
+                            <td style="line-height: 1.6;" width="85%">
+                                <br/><br/><br/>
+                                <strong>SPV SHIFT</strong>
+                                <br/><br/><br/><br/> <br/><br/><br/>
+                                (..................................)
+                                <br/>
+                                    <br/> 
+                            </td>
+                            <td style="text-align:left" width="20%">
+                                <strong>Yogyakarta, <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d %B %Y')" /></strong>
+                                <br/><br/><br/>
+                                <strong>OPERATOR QC SHUTTLE</strong>
+                                <br/><br/><br/><br/> <br/><br/><br/>
+                                (..................................)
+                                <br/>
+                                    <br/>
+                            </td>
+                        </tr>
+                    </table>
+                    </div>
+                </xpath>                
+            </div>
+        </t>
+        </t>       
+    </t>
+</template>
+
+</odoo>
