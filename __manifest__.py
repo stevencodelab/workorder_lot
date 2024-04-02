@@ -9,6 +9,8 @@
     "depends": ["mrp","product","stock"],
     "data": [
         "security/ir.model.access.csv",
+        "report/report_menu.xml",
+        "report/report_kkp_pcs.xml",
         "views/inherit_mrp_production_views.xml",
         "views/inherit_mrp_workorder.xml",
         "wizard/mrp_split_workorder.xml",
