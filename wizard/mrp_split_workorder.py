@@ -16,23 +16,27 @@ class MrpSplitWorkOrder(models.TransientModel):
     production_detailed_vals_ids = fields.One2many('mrp.production.split.line', 'mrp_production_split_id', 'Split Details', compute="_compute_details", store=True, readonly=False)
     production_split_multi = fields.Many2one('mrp.production.split.multi', 'Split Productions')
 
-
-    @api.onchange('production_id')
-    def _onchange_production_id(self):
-        if self.production_id:            
-            workorder = self.production_id.workorder_ids.filtered(lambda w: w.operation_id.workcenter_id)
-            if workorder:
-                self.workorder_id = workorder[0]
-                self.workcenter_id = workorder[0].operation_id.workcenter_id
-                self.workcenter_capacity = workorder[0].operation_id.workcenter_id.capacity
+    # """Untuk menampilkan workorder_id, workcenter_id, dan workcenter_capacity berdasarkan Manufacturing Order
+    # dari field production_id"""
+    # @api.onchange('production_id')
+    # def _onchange_production_id(self):
+    #     if self.production_id:            
+    #         workorder = self.production_id.workorder_ids.filtered(lambda w: w.operation_id.workcenter_id)
+    #         if workorder:
+    #             self.workorder_id = workorder[0]
+    #             self.workcenter_id = workorder[0].operation_id.workcenter_id
+    #             self.workcenter_capacity = workorder[0].operation_id.workcenter_id.capacity
                     
 
-    """Masih memiliki kekeliruan pada rumus dalam melakukan pembagian / split work order"""                
+    """Masih memiliki kekeliruan pada rumus dalam melakukan pembagian / split work order , 
+    quantity untuk masing-masing work order hasil split masih menampilkan quantity to produce 
+    secara keseluruhan."""
+            
     def action_split_workorder(self):
         for record in self:
             if record.qty_to_split <= 0:
                 continue
-
+            
             # Ambil Work Order yang akan dibagi
             workorder = record.workorder_id
             production_id = record.production_id
@@ -41,17 +45,22 @@ class MrpSplitWorkOrder(models.TransientModel):
             if record.workcenter_capacity <= 0:
                 raise UserError("Kapasitas Work Center tidak valid atau nol.")
 
-            # Hitung jumlah produksi per Work Order
-            total_qty = production_id.product_qty
-            qty_per_wo = total_qty // record.qty_to_split
-            remainder = total_qty % record.qty_to_split
+            total_qty_to_produce = production_id.product_qty 
+            qty_per_workorder = total_qty_to_produce // record.qty_to_split
+
+            # Hitung jumlah Work Order yang akan dibuat
+            num_wo = total_qty_to_produce // qty_per_workorder
+            remainder = total_qty_to_produce % qty_per_workorder
+
+            # Konversi nilai float menjadi integer
+            num_wo = int(num_wo)
 
             # Daftar Work Order baru yang akan dibuat
             new_workorders = []
 
             # Split Work Order berdasarkan kapasitas Work Center
-            for i in range(record.qty_to_split):
-                quantity_to_produce = qty_per_wo
+            for i in range(num_wo):
+                quantity_to_produce = qty_per_workorder
                 if i < remainder:
                     quantity_to_produce += 1
 
@@ -62,7 +71,7 @@ class MrpSplitWorkOrder(models.TransientModel):
                 })
                 new_workorders.append(new_workorder.id)
 
-            # Kembalikan aksi untuk menampilkan daftar Work Order baru
+            # Kembalikan aksi untuk menampilkan hasil split work order
             return {
                 'name': 'Work Orders',
                 'type': 'ir.actions.act_window',
@@ -70,6 +79,9 @@ class MrpSplitWorkOrder(models.TransientModel):
                 'view_mode': 'tree,form',
                 'domain': [('id', 'in', new_workorders)],
             }
+
+
+
 
     @api.depends('production_detailed_vals_ids')
     def _compute_counter(self):
@@ -104,7 +116,7 @@ class MrpSplitWorkOrder(models.TransientModel):
         for record in self:
             if record.production_detailed_vals_ids:
                 record.valid_details = record.quantity_to_produce == sum(record.production_detailed_vals_ids.mapped('quantity'))
-
+    
 class MrpProductionSplitMulti(models.TransientModel):
     _name = 'mrp.production.split.multi'
     _description = "Wizard to Split Multiple Productions"
