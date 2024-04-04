@@ -16,71 +16,38 @@ class MrpSplitWorkOrder(models.TransientModel):
     production_detailed_vals_ids = fields.One2many('mrp.production.split.line', 'mrp_production_split_id', 'Split Details', compute="_compute_details", store=True, readonly=False)
     production_split_multi = fields.Many2one('mrp.production.split.multi', 'Split Productions')
 
-    # """Untuk menampilkan workorder_id, workcenter_id, dan workcenter_capacity berdasarkan Manufacturing Order
-    # dari field production_id"""
-    # @api.onchange('production_id')
-    # def _onchange_production_id(self):
-    #     if self.production_id:            
-    #         workorder = self.production_id.workorder_ids.filtered(lambda w: w.operation_id.workcenter_id)
-    #         if workorder:
-    #             self.workorder_id = workorder[0]
-    #             self.workcenter_id = workorder[0].operation_id.workcenter_id
-    #             self.workcenter_capacity = workorder[0].operation_id.workcenter_id.capacity
-                    
 
-    """Masih memiliki kekeliruan pada rumus dalam melakukan pembagian / split work order , 
-    quantity untuk masing-masing work order hasil split masih menampilkan quantity to produce 
-    secara keseluruhan."""
-            
+    """function for split the work order into smaller based on the quantity_to_split.
+    the logic in this function still need to be fix."""
+
     def action_split_workorder(self):
+        new_workorders = []
+
         for record in self:
-            if record.qty_to_split <= 0:
-                continue
-            
-            # Ambil Work Order yang akan dibagi
             workorder = record.workorder_id
-            production_id = record.production_id
+            total_qty_to_produce = record.production_id.product_qty
+            qty_to_split = record.qty_to_split
 
-            # Validasi kapasitas Work Center
-            if record.workcenter_capacity <= 0:
-                raise UserError("Kapasitas Work Center tidak valid atau nol.")
+            self.production_id.qty_producing -= self.qty_to_split
+            qty_per_work_order = int(total_qty_to_produce // qty_to_split)
 
-            total_qty_to_produce = production_id.product_qty 
-            qty_per_workorder = total_qty_to_produce // record.qty_to_split
-
-            # Hitung jumlah Work Order yang akan dibuat
-            num_wo = total_qty_to_produce // qty_per_workorder
-            remainder = total_qty_to_produce % qty_per_workorder
-
-            # Konversi nilai float menjadi integer
-            num_wo = int(num_wo)
-
-            # Daftar Work Order baru yang akan dibuat
-            new_workorders = []
-
-            # Split Work Order berdasarkan kapasitas Work Center
-            for i in range(num_wo):
-                quantity_to_produce = qty_per_workorder
-                if i < remainder:
-                    quantity_to_produce += 1
-
-                # Buat Work Order baru berdasarkan data dari Work Order yang sudah ada
-                new_workorder = workorder.copy(default={
+            for i in range(int(qty_to_split)):
+                new_name = workorder.copy(default={
                     'name': '%s (Split %s)' % (workorder.name, i + 1),
-                    'product_qty': quantity_to_produce,
+                    'product_qty': qty_per_work_order,
                 })
-                new_workorders.append(new_workorder.id)
+                new_workorders.append(new_name.id) 
 
-            # Kembalikan aksi untuk menampilkan hasil split work order
-            return {
-                'name': 'Work Orders',
-                'type': 'ir.actions.act_window',
-                'res_model': 'mrp.workorder',
-                'view_mode': 'tree,form',
-                'domain': [('id', 'in', new_workorders)],
-            }
+            for new_workorder in self.env['mrp.workorder'].browse(new_workorders):
+                new_workorder.product_qty = qty_per_work_order
 
-
+        return {
+            'name': 'Work Orders',
+            'type': 'ir.actions.act_window',
+            'res_model': 'mrp.workorder',
+            'view_mode': 'tree,form',
+            'domain': [('id', 'in', new_workorders)],
+        }
 
 
     @api.depends('production_detailed_vals_ids')
@@ -128,6 +95,7 @@ class MrpProductionSplitLine(models.TransientModel):
     _name='mrp.production.split.line'
     _description='Mrp Production Split Line'    
     
+
     mrp_production_split_id = fields.Many2one('mrp.production.split', 'Split Production', required=True, ondelete="cascade")
     quantity = fields.Float('Quantity To Produce', digits='Product Unit of Measure', required=True)
     user_id = fields.Many2one('res.users', 'Responsible', domain=lambda self: [('groups_id', 'in', self.env.ref('mrp.group_mrp_user').id)])
