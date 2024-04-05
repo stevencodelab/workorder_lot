@@ -12,7 +12,7 @@ class MrpSplitWorkOrder(models.TransientModel):
     workorder_id = fields.Many2one('mrp.workorder', string='Work Order')
     workcenter_id = fields.Many2one('mrp.workcenter', string="Work Center")
     workcenter_capacity = fields.Float(related='workcenter_id.capacity', string="Work Center Capacity")
-    qty_to_split = fields.Integer(string="Split Into ?")
+    qty_to_split = fields.Integer(string="Split Into ?", required=True, readonly=False, copy=False, store=True)
     production_detailed_vals_ids = fields.One2many('mrp.production.split.line', 'mrp_production_split_id', 'Split Details', compute="_compute_details", store=True, readonly=False)
     production_split_multi = fields.Many2one('mrp.production.split.multi', 'Split Productions')
 
@@ -25,11 +25,10 @@ class MrpSplitWorkOrder(models.TransientModel):
 
         for record in self:
             workorder = record.workorder_id
-            total_qty_to_produce = record.production_id.product_qty
+            total_qty_to_produce = record.product_qty
             qty_to_split = record.qty_to_split
 
-            self.production_id.qty_producing -= self.qty_to_split
-            qty_per_work_order = int(total_qty_to_produce // qty_to_split)
+            qty_per_work_order = int(record.product_qty // record.qty_to_split)
 
             for i in range(int(qty_to_split)):
                 new_name = workorder.copy(default={
@@ -40,7 +39,8 @@ class MrpSplitWorkOrder(models.TransientModel):
 
             for new_workorder in self.env['mrp.workorder'].browse(new_workorders):
                 new_workorder.product_qty = qty_per_work_order
-
+                new_workorder.state = 'ready'
+                
         return {
             'name': 'Work Orders',
             'type': 'ir.actions.act_window',
@@ -48,7 +48,6 @@ class MrpSplitWorkOrder(models.TransientModel):
             'view_mode': 'tree,form',
             'domain': [('id', 'in', new_workorders)],
         }
-
 
     @api.depends('production_detailed_vals_ids')
     def _compute_counter(self):
