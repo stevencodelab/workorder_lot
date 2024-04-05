@@ -6,7 +6,23 @@ class MrpProduction(models.Model):
     _inherit = "mrp.production"
 
     production_capacity = fields.Float(compute='_compute_production_capacity', help="Quantity that can be produced with the current stock of components")
+    document_id = fields.Many2one('msp.documents.id', string="Documents ID", copy=False, readonly=False)
+    doc_ids = fields.Char(related='document_id.doc_name', string="Document ID")
+    partner_id = fields.Many2one('res.partner', 'Customer')
 
+    sample_dev_id = fields.Many2one('msp.sample.dev', 'Sample Development', store=True)
+    sample_style = fields.Char(related='sample_dev_id.style', string="Style")
+    warna_sample = fields.Char(related='sample_dev_id.warna', string="Warna")
+    sample_size = fields.Float(related='sample_dev_id.size', string="Size")
+
+    def _get_sample_dev_id(self):
+        for production in self:
+            product_id = production.product_id.id
+            sample_dev_data = self.env['msp.sample.dev'].search([('product_id', '=', product_id)], limit=1)
+            if sample_dev_data:
+                production.sample_dev_id = sample_dev_data.id
+            else:
+                production.sample_dev_id = False
 
     """action to open to Split Production form"""
     def action_split(self):
