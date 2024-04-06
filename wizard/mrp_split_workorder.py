@@ -1,5 +1,6 @@
-from odoo import _, models, fields, api
-from odoo.exceptions import UserError
+from odoo import models, fields, api
+from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_compare, float_round, float_is_zero, format_datetime
 
 class MrpSplitWorkOrder(models.TransientModel):
     _name ='mrp.split.work.order'
@@ -10,9 +11,10 @@ class MrpSplitWorkOrder(models.TransientModel):
     product_id = fields.Many2one(related='production_id.product_id', string='Product')
     quantity_to_produce = fields.Float(related='production_id.product_qty', string='Quantity To Produce')
     workorder_id = fields.Many2one('mrp.workorder', string='Work Order')
+    product_uom_id = fields.Many2one(related='production_id.product_uom_id')
     workcenter_id = fields.Many2one('mrp.workcenter', string="Work Center")
     workcenter_capacity = fields.Float(related='workcenter_id.capacity', string="Work Center Capacity")
-    qty_to_split = fields.Integer(string="Split Into ?", required=True, readonly=False, copy=False, store=True)
+    qty_to_split = fields.Integer(string="Split Into ?", required=True, readonly=False, copy=False, store=True, compute="_compute_counter")
     production_detailed_vals_ids = fields.One2many('mrp.production.split.line', 'mrp_production_split_id', 'Split Details', compute="_compute_details", store=True, readonly=False)
     production_split_multi = fields.Many2one('mrp.production.split.multi', 'Split Productions')
 
@@ -28,19 +30,19 @@ class MrpSplitWorkOrder(models.TransientModel):
             total_qty_to_produce = record.product_qty
             qty_to_split = record.qty_to_split
 
-            qty_per_work_order = int(record.product_qty // record.qty_to_split)
-
-            for i in range(int(qty_to_split)):
+            qty_per_workorder = int(total_qty_to_produce // qty_to_split)
+            result_after_split = qty_per_workorder % qty_to_split
+            
+            for i in range(qty_to_split):
                 new_name = workorder.copy(default={
                     'name': '%s (Split %s)' % (workorder.name, i + 1),
-                    'product_qty': qty_per_work_order,
+                    'product_qty': result_after_split,
                 })
-                new_workorders.append(new_name.id) 
+                new_workorders.append(new_name.id)
 
             for new_workorder in self.env['mrp.workorder'].browse(new_workorders):
-                new_workorder.product_qty = qty_per_work_order
                 new_workorder.state = 'ready'
-                
+
         return {
             'name': 'Work Orders',
             'type': 'ir.actions.act_window',
@@ -56,26 +58,26 @@ class MrpSplitWorkOrder(models.TransientModel):
 
     @api.depends('qty_to_split')
     def _compute_details(self):
-        for record in self:
-            split = []
-            if record.qty_to_split < 1 or not record.production_id:
-                record.production_detailed_vals_ids = split
+        for wizard in self:
+            commands = []
+            if wizard.qty_to_split < 1 or not wizard.production_id:
+                wizard.production_detailed_vals_ids = commands
                 continue
-            quantity = record.quantity_to_produce / record.qty_to_split
-            remaining_quantity = record.quantity_to_produce
-            for _ in range(record.qty_to_split - 1):
-                split.append((0, 0, {
+            quantity = float_round(wizard.product_qty / wizard.qty_to_split, precision_rounding=wizard.product_uom_id.rounding)
+            remaining_quantity = wizard.product_qty
+            for _ in range(wizard.qty_to_split - 1):
+                commands.append((0, 0, {
                     'quantity': quantity,
-                    'user_id': record.production_id.user_id.id,
-                    'date': record.production_id.date_start,
+                    'user_id': wizard.production_id.user_id.id,
+                    'production_id': wizard.production_id.name,
                 }))
-                remaining_quantity -= quantity
-            split.append((0, 0, {
+                remaining_quantity = float_round(remaining_quantity - quantity, precision_rounding=wizard.product_uom_id.rounding)
+            commands.append((0, 0, {
                 'quantity': remaining_quantity,
-                'user_id': record.production_id.user_id.id,
-                'date': record.production_id.date_start,
+                'user_id': wizard.production_id.user_id.id,
+                'production_id': wizard.production_id.name,
             }))
-            record.production_detailed_vals_ids = split
+            wizard.production_detailed_vals_ids = commands
 
     @api.depends('production_detailed_vals_ids')
     def _compute_valid_details(self):
@@ -89,19 +91,17 @@ class MrpProductionSplitMulti(models.TransientModel):
 
     production_ids = fields.One2many('mrp.split.work.order', 'production_split_multi', 'Productions To Split')
 
-
 class MrpProductionSplitLine(models.TransientModel):
     _name='mrp.production.split.line'
     _description='Mrp Production Split Line'    
     
-
-    mrp_production_split_id = fields.Many2one('mrp.production.split', 'Split Production', required=True, ondelete="cascade")
-    quantity = fields.Float('Quantity To Produce', digits='Product Unit of Measure', required=True)
+    mrp_production_split_id = fields.Many2one('mrp.split.work.order', 'Split Production', required=True, ondelete="cascade")
+    quantity = fields.Float('Quantity Each WO', digits='Product Unit of Measure', required=True)
     user_id = fields.Many2one('res.users', 'Responsible', domain=lambda self: [('groups_id', 'in', self.env.ref('mrp.group_mrp_user').id)])
     date = fields.Datetime('Schedule Date')
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order')
     product_id = fields.Many2one(related='production_id.product_id')
-
+    
 
 
 
