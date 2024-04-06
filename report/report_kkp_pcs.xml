@@ -5,45 +5,48 @@
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
                     <div class="page">
-                        <h5 style="text-alignt:left; font-size:18px; font-weight:bold; font-variant: small-caps;"></h5>
-                        <div style=" background-color:  #3498DB; "> 
-                            <div style=" background-color:  #3498DB;">
-                                <div class="row">
-                                        <div class="col-3">
-                                            <font color="#fff">
-                                                <strong>Document ID :</strong>
-                                                
-                                            </font>
-                                        </div>
-                                        <div class="col-3">
-                                            <font color="#fff">
-                                                <strong>Page :</strong>
-                                               
-                                            </font>
-                                        </div>
-                                        <div class="col-3">
-                                            <font color="#fff">
-                                                <strong>Revision No :</strong>
-                                                
-                                            </font>
-                                        </div>
-                                        <div class="col-3">
-                                            <font color="#fff">
-                                                <strong>Revision Date :</strong>
-                                               
-                                            </font>
-                                        </div>
-                                </div>
-                            </div>
-                        </div>
-                        <table class="table table-sm table-striped">
+
+                       <table class="table table-sm table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                 <th style="background-color:#3498DB; !important;color:#FFF !important;">Document ID</th>
+                                 <th style="background-color:#3498DB; !important;color:#FFF !important;">Page</th>
+                                 <th style="background-color:#3498DB; !important;color:#FFF !important;">Revision No</th>
+                                 <th style="background-color:#3498DB; !important;color:#FFF !important;">Revision Date</th>
+                                 <th style="background-color:#3498DB; !important;color:#FFF !important;">Effective Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <t t-foreach="doc.doc_ids" t-as="msp_doc">
+                            <tr>
+                                <td>
+                                    <span t-field="msp_doc.doc_ids"/>
+                                </td>
+                                <td>
+
+                                </td>
+                                <td>
+
+                                </td>
+                                <td>
+
+                                </td>
+                                <td>
+
+                                </td>
+                            </tr>
+                        </t>
+                        </tbody>
+                       </table>
+
+                        <table class="table table-sm table-bordered table-striped">
                             <thead>
                                 <tr>
-                                    <th style="background-color:  #3498DB;">Nama Artikel</th>
-                                    <th style="background-color:  #3498DB;">Customer</th>
-                                    <th style="background-color:  #3498DB;">Style</th>
-                                    <th style="background-color:  #3498DB;">Size</th>
-                                    <th style="background-color:  #3498DB;">Warna</th>
+                                    <th style="background-color:#3498DB; !important;color:#FFF !important;">Nama Artikel</th>
+                                    <th style="background-color:#3498DB; !important;color:#FFF !important;">Customer</th>
+                                    <th style="background-color:#3498DB; !important;color:#FFF !important;">Style</th>
+                                    <th style="background-color:#3498DB; !important;color:#FFF !important;">Size</th>
+                                    <th style="background-color:#3498DB; !important;color:#FFF !important;">Warna</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -52,17 +55,35 @@
                                         <span t-field="doc.product_id"/>
                                     </td>
                                     <td>
-                                        <span t-field="doc.product_qty"/>
+                                        <span t-field="doc.partner_id"/>
                                     </td>
                                     <td>
-                                        <span t-field="doc.product_qty"/>
+                                        <span t-field="doc.sample_style"/>
                                     </td>
                                     <td>
-                                        <span t-field="doc.product_qty"/>
+                                        <!-- <span t-field="doc.sample_size"/> -->
                                     </td>
                                     <td>
-                                        <span t-field="doc.product_qty"/>
+                                        <span t-field="doc.warna_sample"/>
                                     </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="table table-sm table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th style="background-color:#3498DB; !important;color:#FFF !important;">No MO</th>
+                                    <th style="background-color:#3498DB; !important;color:#FFF !important;">No SO</th>
+                                    <th style="background-color:#3498DB; !important;color:#FFF !important;">Tanggal Kirim</th>
+                                    <th style="background-color:#3498DB; !important;color:#FFF !important;">Quantity / WO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span t-field="doc.name"/></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
                                 </tr>
                             </tbody>
                         </table>
