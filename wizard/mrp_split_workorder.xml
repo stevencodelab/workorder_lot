@@ -8,35 +8,36 @@
                 <form string="Split Work Order">
                     <group>
                         <field name="production_id" readonly="1"/>
+                        <field name="product_qty"/>
                     </group>
                     <group>
                         <field name="workorder_id"/>
-                        <field name="workcenter_id"/>
+                        <!-- <field name="workcenter_id"/> -->
                     </group>
-                    <group name="workcenter_capacity">
+                    <!-- <group name="workcenter_capacity">
                         <field name="workcenter_capacity"/>
-                    </group>
+                    </group> -->
                     <group name="quantity_split">
                         <field name="qty_to_split"/>
                     </group>
-                        <!-- <notebook>
-                            <page string="Split Details">
-                                <field name="production_detailed_vals_ids" editable="top">
-                                    <tree string="Split Details">
-                                        <field name="product_id"/>
-                                        <field name="user_id"/>
-                                        <field name="quantity"/>
-                                    </tree>
-                                </field>
-                            </page> -->
-                            <!-- <page string="Other Information"> -->
-                                <!-- Write code here if there's an update or something want to be added   -->
-                            <!-- </page>
-                        </notebook> -->
-                        <footer>
-                            <button class="btn btn-info" name="action_split_workorder" string="Split WO" type="object" icon="fa-scissors"/>
-                            <button class="btn btn-primary" string="Discard" special="cancel" data-hotkey="x"/> 
-                        </footer>
+                    <notebook>
+                        <page string="Split Details">
+                            <field name="production_detailed_vals_ids" editable="bottom">
+                                <tree string="Split Details">
+                                    <!-- <field name="production_id"/> -->
+                                    <field name="user_id"/>
+                                    <field name="quantity"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Other Information">
+                            <!-- Write code here if there's an update or something want to be added   -->
+                        </page>
+                    </notebook>
+                    <footer>
+                        <button class="btn btn-info" name="action_split_workorder" string="Split WO" type="object" icon="fa-scissors"/>
+                        <button class="btn btn-primary" string="Discard" special="cancel" data-hotkey="x"/> 
+                    </footer>
                 </form>
             </field>
         </record>
