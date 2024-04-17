@@ -35,7 +35,7 @@
                         </page>
                     </notebook>
                     <footer>
-                        <button class="btn btn-info" name="action_split_workorder" string="Split WO" type="object" icon="fa-scissors"/>
+                        <button class="btn btn-info" name="action_split" string="Split WO" type="object" icon="fa-scissors"/>
                         <button class="btn btn-primary" string="Discard" special="cancel" data-hotkey="x"/> 
                     </footer>
                 </form>

@@ -6,6 +6,7 @@ class MrpSplitWorkOrder(models.TransientModel):
     _name ='mrp.split.work.order'
     _description = 'Split Work Order'
 
+
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order', store=True, copy=False)
     product_qty = fields.Float(related='production_id.product_qty')
     product_id = fields.Many2one(related='production_id.product_id', string='Product')
@@ -18,39 +19,68 @@ class MrpSplitWorkOrder(models.TransientModel):
     production_detailed_vals_ids = fields.One2many('mrp.production.split.line', 'mrp_production_split_id', 'Split Details', compute="_compute_details", store=True, readonly=False)
     production_split_multi = fields.Many2one('mrp.production.split.multi', 'Split Productions')
 
-
-    """function for split the work order into smaller based on the quantity_to_split.
+    """function for split the work order into smaller based on the qty_to_split.
     the logic in this function still need to be fix."""
 
-    def action_split_workorder(self):
-        new_workorders = []
+    # def action_split_workorder(self):
+    #     new_workorders = []
+        
+    #     total_qty_to_produce = self.production_id.product_qty 
+        
+    #     for i in range(self.qty_to_split):
+    #         new_name = self.workorder_id.copy(default={
+    #             'name': '%s (Split %s)' % (self.workorder_id.name, i + 1),
+    #             'product_qty': int(total_qty_to_produce / self.qty_to_split),})
 
+    #         new_workorders.append(new_name.id)
+    #     self.production_id.qty_producing -= self.qty_to_split
+        
+    #     qty_per_workorder = total_qty_to_produce / self.qty_to_split
+
+    #     for new_workorder in self.env['mrp.workorder'].browse(new_workorders):
+    #         new_workorder.state = 'ready'
+    #         new_workorder.product_qty = qty_per_workorder
+
+    #     return {
+    #         'name': 'Work Orders',
+    #         'type': 'ir.actions.act_window',
+    #         'res_model': 'mrp.workorder',
+    #         'view_mode': 'tree,form',
+    #         'domain': [('id', 'in', new_workorders)],
+    #     }
+
+    def action_split(self):
+        workorders_baru = []
         for record in self:
-            workorder = record.workorder_id
-            total_qty_to_produce = record.product_qty
-            qty_to_split = record.qty_to_split
 
-            qty_per_workorder = int(total_qty_to_produce // qty_to_split)
-            result_after_split = qty_per_workorder % qty_to_split
-            
+            total_qty_seluruh = product_qty
+            jumlah_split = qty_to_split
+
+            #pembagian kapasitas produksi menggunakan modulo
+            kapasitas_per_wo = int(total_qty_seluruh % jumlah_split)
+
             for i in range(qty_to_split):
-                new_name = workorder.copy(default={
-                    'name': '%s (Split %s)' % (workorder.name, i + 1),
-                    'product_qty': result_after_split,
+                nama_baru = workorder_id.copy(default={
+                    'name' : '%s (Splited %s)' % (self.workorder_id.nama_baru, i + 1),
+                    'product_qty' : kapasitas_per_wo,
                 })
-                new_workorders.append(new_name.id)
 
-            for new_workorder in self.env['mrp.workorder'].browse(new_workorders):
-                new_workorder.state = 'ready'
+            workorders_baru.append(nama_baru.id)
+            production_id.qty_producing -= jumlah_split  
+            
+            for workorder_baru in self.env['mrp.workorder'].browse(workorders_baru): 
+                workorder_baru.state = 'ready'
+                workorder_baru.product_qty = kapasitas_per_wo
 
-        return {
-            'name': 'Work Orders',
-            'type': 'ir.actions.act_window',
-            'res_model': 'mrp.workorder',
-            'view_mode': 'tree,form',
-            'domain': [('id', 'in', new_workorders)],
-        }
+            return {
+                'name' : 'Work Orders',
+                'type' : 'ir.actions.act_window',
+                'res_model' : 'mrp.workorder',
+                'view_mode' : 'tree, form',
+                'domain' : [('id', 'in', workorders_baru)],
 
+            }    
+        
     @api.depends('production_detailed_vals_ids')
     def _compute_counter(self):
         for wizard in self:
@@ -84,7 +114,7 @@ class MrpSplitWorkOrder(models.TransientModel):
         for record in self:
             if record.production_detailed_vals_ids:
                 record.valid_details = record.quantity_to_produce == sum(record.production_detailed_vals_ids.mapped('quantity'))
-    
+
 class MrpProductionSplitMulti(models.TransientModel):
     _name = 'mrp.production.split.multi'
     _description = "Wizard to Split Multiple Productions"
@@ -101,10 +131,6 @@ class MrpProductionSplitLine(models.TransientModel):
     date = fields.Datetime('Schedule Date')
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order')
     product_id = fields.Many2one(related='production_id.product_id')
-    
-
-
-
 
 
 

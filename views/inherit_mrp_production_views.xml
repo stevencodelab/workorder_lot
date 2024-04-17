@@ -25,5 +25,20 @@
             <field name="code">action = records.action_split()</field>
         </record>
 
+        <record id="view_mrp_production_form_inherited" model="ir.ui.view">
+            <field name="name">mrp.production.form.inherited</field>
+            <field name="model">mrp.production</field>
+            <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='user_id']" position="after">
+                    <field name="sample_dev_id" invisible="1"/>
+                    <field name="partner_id"/>
+                    <field name="sample_style" invisible="1"/>
+                    <field name="warna_sample" invisible="1"/>
+                    <field name="sample_size" invisible="1"/>
+                </xpath>
+            </field>
+        </record>
+
     </data>
 </odoo>
