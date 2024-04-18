@@ -27,7 +27,7 @@ class MrpSplitWorkOrder(models.TransientModel):
         for record in self:
             total_qty_seluruh = record.product_qty
             jumlah_split = record.qty_to_split
-            kapasitas_per_wo = int(total_qty_seluruh // jumlah_split)
+            kapasitas_per_wo = int(total_qty_seluruh / jumlah_split)
 
             for i in range(jumlah_split):
                 nama_baru = record.workorder_id.copy(default={
@@ -35,7 +35,7 @@ class MrpSplitWorkOrder(models.TransientModel):
                     'product_qty': kapasitas_per_wo,
                 })
                 workorders_baru.append(nama_baru.id)
-                print(f"Work Order baru {i+1}: product_qty = {kapasitas_per_wo}") # Debugging
+                print(f"Work Order baru {i+1}: product_qty = {kapasitas_per_wo}") #Debugging
 
             record.production_id.qty_producing -= jumlah_split
 
@@ -78,7 +78,7 @@ class MrpSplitWorkOrder(models.TransientModel):
                 'production_id': wizard.production_id.name,
             }))
             wizard.production_detailed_vals_ids = commands
-
+    
     @api.depends('production_detailed_vals_ids')
     def _compute_valid_details(self):
         for record in self:
@@ -101,5 +101,4 @@ class MrpProductionSplitLine(models.TransientModel):
     date = fields.Datetime('Schedule Date')
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order')
     product_id = fields.Many2one(related='production_id.product_id')
-
 

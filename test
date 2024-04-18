@@ -1,0 +1,51 @@
+[1mdiff --git a/wizard/mrp_split_workorder.py b/wizard/mrp_split_workorder.py[m
+[1mindex 96de187..3ce9722 100644[m
+[1m--- a/wizard/mrp_split_workorder.py[m
+[1m+++ b/wizard/mrp_split_workorder.py[m
+[36m@@ -27,7 +27,7 @@[m [mclass MrpSplitWorkOrder(models.TransientModel):[m
+         for record in self:[m
+             total_qty_seluruh = record.product_qty[m
+             jumlah_split = record.qty_to_split[m
+[31m-            kapasitas_per_wo = int(total_qty_seluruh // jumlah_split)[m
+[32m+[m[32m            kapasitas_per_wo = int(total_qty_seluruh / jumlah_split)[m
+ [m
+             for i in range(jumlah_split):[m
+                 nama_baru = record.workorder_id.copy(default={[m
+[36m@@ -38,11 +38,11 @@[m [mclass MrpSplitWorkOrder(models.TransientModel):[m
+                 print(f"Work Order baru {i+1}: product_qty = {kapasitas_per_wo}") # Debugging[m
+ [m
+             record.production_id.qty_producing -= jumlah_split[m
+[31m-[m
+[32m+[m[41m        [m
+         for workorder_baru in self.env['mrp.workorder'].browse(workorders_baru):[m
+             workorder_baru.state = 'ready'[m
+[31m-            print(f"Work Order baru: {workorder_baru.name}, product_qty = {kapasitas_per_wo}") #Debugging[m
+[31m-[m
+[32m+[m[32m            print(f"Work Order baru: {workorder_baru.name}, product_qty = {kapasitas_per_wo}") # Debugging[m
+[32m+[m[41m        [m
+         return {[m
+             'name': 'Work Orders',[m
+             'type': 'ir.actions.act_window',[m
+[36m@@ -50,7 +50,7 @@[m [mclass MrpSplitWorkOrder(models.TransientModel):[m
+             'view_mode': 'tree,form',[m
+             'domain': [('id', 'in', workorders_baru)],[m
+         }[m
+[31m-[m
+[32m+[m[41m    [m
+     @api.depends('production_detailed_vals_ids')[m
+     def _compute_counter(self):[m
+         for wizard in self:[m
+[36m@@ -78,7 +78,7 @@[m [mclass MrpSplitWorkOrder(models.TransientModel):[m
+                 'production_id': wizard.production_id.name,[m
+             }))[m
+             wizard.production_detailed_vals_ids = commands[m
+[31m-[m
+[32m+[m[41m    [m
+     @api.depends('production_detailed_vals_ids')[m
+     def _compute_valid_details(self):[m
+         for record in self:[m
+[36m@@ -102,4 +102,3 @@[m [mclass MrpProductionSplitLine(models.TransientModel):[m
+     production_id = fields.Many2one('mrp.production', 'Manufacturing Order')[m
+     product_id = fields.Many2one(related='production_id.product_id')[m
+ [m
+[31m-[m

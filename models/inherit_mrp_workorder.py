@@ -8,5 +8,5 @@ class MrpWorkOrderInherit(models.Model):
 
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order')
     product_qty = fields.Float(related='production_id.product_qty')
-
+    
     
