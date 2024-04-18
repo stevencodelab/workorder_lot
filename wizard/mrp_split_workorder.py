@@ -23,36 +23,28 @@ class MrpSplitWorkOrder(models.TransientModel):
     the logic in this function still need to be fix."""
 
     def action_split_wo(self):
-        workorders_baru = []
-        for record in self:
-            total_qty_seluruh = record.product_qty
-            jumlah_split = record.qty_to_split
-            kapasitas_per_wo = total_qty_seluruh // jumlah_split
+            workorders_baru = []
+            for record in self:
+                total_qty_seluruh = record.product_qty
+                jumlah_split = record.qty_to_split
+                kapasitas_per_wo = total_qty_seluruh / jumlah_split
 
-            for i in range(jumlah_split):
-                nama_baru = record.workorder_id.copy(default={
-                    'name' : '%s (Splited %s)' % (record.workorder_id.name, i +1),
-                    'product_qty' : kapasitas_per_wo,
-                })
-                workorders_baru.append(nama_baru.id)
-                print(f"Work Order baru {i+1}: product_qty = {kapasitas_per_wo}") #Debugging
+                for i in range(jumlah_split):
+                    nama_baru = record.workorder_id.copy(default={
+                        'name': '%s (Splited %s)' % (record.workorder_id.name, i + 1),
+                        'product_qty': kapasitas_per_wo,
+                        'kapasitas_per_wo': kapasitas_per_wo,  # Set nilai kapasitas_per_wo pada work order baru
+                    })
+                    workorders_baru.append(nama_baru.id)
 
-            record.production_id.qty_producing -= jumlah_split
-                
-            """"Over ride method write agar hanya mengubah quantity pada Work Order yang di split.
-            serta mengubah status dari Work Order menjadi 'ready' ketika user mengklik tombol konfirmasi """
+                record.production_id.qty_producing -= jumlah_split
 
-            workorder_to_update = self.env['mrp.workorder'].browse(workorders_baru)
-            workorder_to_update.write({'kapasitas_per_wo' : kapasitas_per_wo })
-            workorder_to_update.state = 'ready'
-
-
-            return{
-                'name' : 'Work Orders',
-                'type' : 'ir.actions.act_window',
-                'res_model' : 'mrp.workorder',
-                'view_mode' : 'tree,form',
-                'domain' : [('id', 'in', workorders_baru)],
+            return {
+                'name': 'Work Orders',
+                'type': 'ir.actions.act_window',
+                'res_model': 'mrp.workorder',
+                'view_mode': 'tree,form',
+                'domain': [('id', 'in', workorders_baru)],
             }
 
     @api.depends('production_detailed_vals_ids')
@@ -93,7 +85,7 @@ class MrpProductionSplitMulti(models.TransientModel):
     _name = 'mrp.production.split.multi'
     _description = "Wizard to Split Multiple Productions"
 
-    production_ids = fields.One2many('mrp.split.work.order', 'production_split_multi', 'Production To Split')
+    production_ids = fields.One2many('mrp.split.work.order', 'production_split_multi', 'Productions To Split')
 
 class MrpProductionSplitLine(models.TransientModel):
     _name='mrp.production.split.line'
