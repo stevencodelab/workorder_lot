@@ -12,11 +12,7 @@
                     </group>
                     <group>
                         <field name="workorder_id"/>
-                        <!-- <field name="workcenter_id"/> -->
                     </group>
-                    <!-- <group name="workcenter_capacity">
-                        <field name="workcenter_capacity"/>
-                    </group> -->
                     <group name="quantity_split">
                         <field name="qty_to_split"/>
                     </group>
@@ -24,30 +20,27 @@
                         <page string="Split Details">
                             <field name="production_detailed_vals_ids" editable="bottom">
                                 <tree string="Split Details">
-                                    <!-- <field name="production_id"/> -->
                                     <field name="user_id"/>
                                     <field name="quantity"/>
                                 </tree>
                             </field>
                         </page>
                         <page string="Other Information">
-                            <!-- Write code here if there's an update or something want to be added   -->
+                            <!-- Write code here if there's an update or something want to be added -->
                         </page>
                     </notebook>
                     <footer>
-                        <button class="btn btn-info" name="action_split" string="Split WO" type="object" icon="fa-scissors"/>
+                        <button class="btn btn-info" name="action_split_wo" string="Split WO" type="object" icon="fa-scissors"/>
                         <button class="btn btn-primary" string="Discard" special="cancel" data-hotkey="x"/> 
                     </footer>
                 </form>
             </field>
         </record>
-
         <record id="action_mrp_production_split_multi" model="ir.actions.act_window">
             <field name="name">Split productions</field>
             <field name="res_model">mrp.split.work.order</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
         </record>
-
     </data>
 </odoo>
