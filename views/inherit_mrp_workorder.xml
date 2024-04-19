@@ -7,6 +7,7 @@
             <field name="arch" type="xml">
                 <tree>
                     <field name="product_qty"/>
+                    <field name="kapasitas_per_wo"/>
                 </tree>
             </field>
         </record>    
