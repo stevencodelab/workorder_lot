@@ -38,6 +38,10 @@ class MrpSplitWorkOrder(models.TransientModel):
                     workorders_baru.append(nama_baru.id)
                     print(f"Work Order baru {i+1}: product_qty = {kapasitas_per_wo}") # Debugging
 
+                for workorder_baru in self.env['mrp.workorder'].browse(workorders_baru):
+                    workorder_baru.state = 'ready'
+                    print(f"Work Order baru: {workorder_baru.name}, product_qty = {kapasitas_per_wo}") # Debugging
+                    
                 record.production_id.qty_producing -= jumlah_split
 
             return {
