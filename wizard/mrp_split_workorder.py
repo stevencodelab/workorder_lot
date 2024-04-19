@@ -6,7 +6,7 @@ class MrpSplitWorkOrder(models.TransientModel):
     _name ='mrp.split.work.order'
     _description = 'Split Work Order'
 
-
+    
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order', store=True, copy=False)
     product_qty = fields.Float(related='production_id.product_qty')
     product_id = fields.Many2one(related='production_id.product_id', string='Product')
@@ -27,7 +27,7 @@ class MrpSplitWorkOrder(models.TransientModel):
             for record in self:
                 total_qty_seluruh = record.product_qty
                 jumlah_split = record.qty_to_split
-                kapasitas_per_wo = total_qty_seluruh / jumlah_split
+                kapasitas_per_wo = int(total_qty_seluruh // jumlah_split)
 
                 for i in range(jumlah_split):
                     nama_baru = record.workorder_id.copy(default={
@@ -36,6 +36,7 @@ class MrpSplitWorkOrder(models.TransientModel):
                         'kapasitas_per_wo': kapasitas_per_wo,  # Set nilai kapasitas_per_wo pada work order baru
                     })
                     workorders_baru.append(nama_baru.id)
+                    print(f"Work Order baru {i+1}: product_qty = {kapasitas_per_wo}") # Debugging
 
                 record.production_id.qty_producing -= jumlah_split
 
