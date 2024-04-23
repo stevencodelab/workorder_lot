@@ -8,7 +8,7 @@ class MrpSplitWorkOrder(models.TransientModel):
 
     
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order', store=True, copy=False)
-    product_qty = fields.Float(related='production_id.product_qty')
+    product_qty = fields.Float(related='workorder_id.product_qty')
     product_id = fields.Many2one(related='production_id.product_id', string='Product')
     quantity_to_produce = fields.Float(related='production_id.product_qty', string='Quantity To Produce')
     workorder_id = fields.Many2one('mrp.workorder', string='Work Order')
@@ -27,38 +27,45 @@ class MrpSplitWorkOrder(models.TransientModel):
         workorders = []
         for record in self:
             total_qty = record.product_qty
-            capacity = record.workcenter_capacity
-            qty_to_produce = record.quantity_to_produce
-            qty_per_wo = int(total_qty / capacity)
-            remaining_qty = total_qty % capacity
+            capacity = record.workcenter_id.capacity
+            qty_per_wo = int(total_qty // capacity)
+            remaining_qty = total_qty % capacity 
 
+            # Membuat work order utama
             for i in range(qty_per_wo):
-                name = '%s (Splited %s)' % (record.production_id.name, i + 1)
+                name = '%s (Split %s)' % (record.workorder_id.name, i + 1)
                 product_qty = capacity
                 workorder = record.production_id.workorder_ids.create({
                     'name': name,
                     'product_id': record.product_id.id,
                     'product_qty': product_qty,
                     'workcenter_id': record.workcenter_id.id,
+                    'product_uom_id': record.product_id.uom_id.id,
                     'state': 'ready',
+                    'remaining_qty' : capacity,
                 })
                 workorders.append(workorder.id)
 
+           
             if remaining_qty > 0:
-                name = '%s (Splited %s)' % (record.production_id.name, qty_per_wo + 1)
+                name = '%s (Split %s)' % (record.workorder_id.name, qty_per_wo + 1)
                 product_qty = remaining_qty
                 workorder = record.production_id.workorder_ids.create({
                     'name': name,
                     'product_id': record.product_id.id,
                     'product_qty': product_qty,
                     'workcenter_id': record.workcenter_id.id,
-                    'state': 'ready',  
+                    'product_uom_id': record.product_id.uom_id.id,
+                    'state': 'ready',
+                    'remaining_qty' : remaining_qty,
                 })
                 workorders.append(workorder.id)
 
-            record.production_id.qty_producing -= qty_to_produce
+                print("Total Quantity:", total_qty)
+                print("Work Center Capacity:", capacity)
+                print("Quantity per Work Order:", qty_per_wo)
+                print("Remaining Quantity:", remaining_qty)
 
-        # Return action to open created Work Orders
         return {
             'name': 'Work Orders',
             'type': 'ir.actions.act_window',
@@ -66,6 +73,8 @@ class MrpSplitWorkOrder(models.TransientModel):
             'view_mode': 'tree,form',
             'domain': [('id', 'in', workorders)],
         }
+
+
 
     @api.depends('production_detailed_vals_ids')
     def _compute_counter(self):
