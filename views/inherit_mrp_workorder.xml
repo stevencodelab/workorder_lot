@@ -7,7 +7,7 @@
             <field name="arch" type="xml">
                 <tree>
                     <field name="product_qty"/>
-                    <field name="kapasitas_per_wo"/>
+                    <field name="remaining_qty"/>
                 </tree>
             </field>
         </record>    
