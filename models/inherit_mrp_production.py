@@ -65,7 +65,7 @@ class MrpProduction(models.Model):
                 'user_id': user_id.id,
                 'origin': ",".join(sorted([production.name for production in self])),
             })
-
+    
             for move in production.move_raw_ids:
                 for field, vals in origs[move.bom_line_id.id].items():
                     move[field] = vals
