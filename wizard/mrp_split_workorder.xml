@@ -7,16 +7,17 @@
             <field name="arch" type="xml">
                 <form string="Split Work Order">
                     <group>
-                        <field name="production_id" readonly="1"/>
+                        <field name="workorder_id"/>
                         <field name="product_qty"/>
                     </group>
                     <group>
-                        <field name="workorder_id"/>
                     </group>
                     <group name="quantity_split">
-                        <field name="qty_to_split"/>
+                        <!-- <field name="qty_to_split"/> -->
+                        <field name="workcenter_id"/>
+                        <field name="workcenter_capacity"/>
                     </group>
-                    <notebook>
+                    <!-- <notebook>
                         <page string="Split Details">
                             <field name="production_detailed_vals_ids" editable="bottom">
                                 <tree string="Split Details">
@@ -26,11 +27,11 @@
                             </field>
                         </page>
                         <page string="Other Information">
-                            <!-- Write code here if there's an update or something want to be added -->
+                            
                         </page>
-                    </notebook>
+                    </notebook> -->
                     <footer>
-                        <button class="btn btn-info" name="action_split_wo" string="Split WO" type="object" icon="fa-scissors"/>
+                        <button class="btn btn-info" name="action_split" string="Split WO" type="object" icon="fa-scissors"/>
                         <button class="btn btn-primary" string="Discard" special="cancel" data-hotkey="x"/> 
                     </footer>
                 </form>
