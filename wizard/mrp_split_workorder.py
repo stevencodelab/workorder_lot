@@ -1,6 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare, float_round, float_is_zero, format_datetime
+from odoo.addons.mrp.models.mrp_production import MrpProduction
 
 
 class MrpProduction(models.Model):
@@ -123,36 +124,31 @@ class MrpProduction(models.Model):
             # TODO explode and check no quantity has been edited
             return True   
 
-    """Override _create_workorder function from model mrp.production to model mrp.split.work.order"""
     # def action_confirm(self):
     #     res = super(MrpProduction, self).action_confirm()
 
-    #     for production in self:
-    #         split_workorder = production.env['mrp.split.work.order'].create({
-                   
-    #         })
-
-    #         split_workorder.action_split_workorder()
-
-    #     return res    
+    #     if not self.partner_id:
+    #         raise UserError('This Method Is Successfully Override')
+    #         print('Create Work Order is Override')
+    
+    #         return res
 
 class MrpSplitWorkOrder(models.TransientModel):
     _name ='mrp.split.work.order'
     _description = 'Split Work Order'
-
+    
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order', store=True, copy=False)
     product_qty = fields.Float(related='production_id.product_qty')
     product_id = fields.Many2one(related='production_id.product_id', string='Product')
-    quantity_to_produce = fields.Float(related='production_id.product_qty', string='Quantity To Produce')
     workorder_id = fields.Many2one('mrp.workorder', string='Work Order')
     product_uom_id = fields.Many2one(related='production_id.product_uom_id')
     qty_to_split = fields.Integer(string="Split Into ?",readonly=False,  copy=False, store=True, compute="_compute_counter")
     production_detailed_vals_ids = fields.One2many('mrp.production.split.line', 'mrp_production_split_id', 'Split Details', compute="_compute_details", store=True, readonly=False)
     production_split_multi = fields.Many2one('mrp.production.split.multi', 'Split Productions')
     quantity_to_produce = fields.Float(related='production_id.product_qty', string='Quantity To Produce')
-    workcenter_id = fields.Many2one('mrp.workcenter', string="Work Center")
+    workcenter_id = fields.Many2one(related='workorder_ids.workcenter_id', string="Work Center")
     workcenter_capacity = fields.Float(related='workcenter_id.capacity', string="Work Center Capacity")
-    workorder_ids = fields.Many2one('')
+    workorder_ids = fields.One2many(related='production_id.workorder_ids')
     
     """function for split the work order into smaller based on the qty_to_split.
     the logic in this function still need to be fix."""
@@ -168,7 +164,7 @@ class MrpSplitWorkOrder(models.TransientModel):
                 remaining_qty = total_qty % capacity 
                 
                 for i in range(qty_per_wo):
-                    name = '%s (Split %s)' % (record.workorder_id.name, i + 1)
+                    name = '%s (Split %s)' % (record.workcenter_id.name, i + 1)
                     product_qty = capacity
                     workorder = record.production_id.workorder_ids.create({
                         'name': name,
@@ -182,7 +178,7 @@ class MrpSplitWorkOrder(models.TransientModel):
                     workorders.append(workorder.id)
 
                 if remaining_qty > 0:
-                    name = '%s (Split %s)' % (record.workorder_id.name, qty_per_wo + 1)
+                    name = '%s (Split %s)' % (record.workcenter_id.name, qty_per_wo + 1)
                     product_qty = remaining_qty
                     workorder = record.production_id.workorder_ids.create({
                         'name': name,
@@ -200,13 +196,6 @@ class MrpSplitWorkOrder(models.TransientModel):
                     print("Quantity per Work Order:", qty_per_wo)
                     print("Remaining Quantity:", remaining_qty)
 
-        return {
-            'name': 'Work Orders',
-            'type': 'ir.actions.act_window',
-            'res_model': 'mrp.workorder',
-            'view_mode': 'tree,form',
-            'domain': [('id', 'in', workorders)],
-        }
 
     @api.depends('production_detailed_vals_ids')
     def _compute_counter(self):
