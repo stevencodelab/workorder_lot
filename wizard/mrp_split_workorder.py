@@ -156,52 +156,53 @@ class MrpSplitWorkOrder(models.TransientModel):
     def action_split_workorder(self):
         workorders = []
         for record in self:
-            total_qty = record.product_qty
-            capacity = record.workcenter_id.capacity
-            
-            if capacity:
-                qty_per_wo = int(total_qty // capacity)
-                remaining_qty = total_qty % capacity 
+            for workorder in record.workorder_ids:
+                total_qty = workorder.product_qty
+                capacity = workorder.workcenter_id.capacity
                 
-                for i in range(qty_per_wo):
-                    name = '%s (Split %s)' % (record.workcenter_id.name, i + 1)
-                    product_qty = capacity
-                    workorder = record.production_id.workorder_ids.create({
-                        'name': name,
-                        'product_id': record.product_id.id,
-                        'product_qty': product_qty,
-                        'workcenter_id': record.workcenter_id.id,
-                        'product_uom_id': record.product_id.uom_id.id,
-                        'state': 'ready',
-                        'remaining_qty' : capacity,
-                    })
-                    workorders.append(workorder.id)
+                if capacity:
+                    qty_per_wo = int(total_qty // capacity)
+                    remaining_qty = total_qty % capacity 
 
-                if remaining_qty > 0:
-                    name = '%s (Split %s)' % (record.workcenter_id.name, qty_per_wo + 1)
-                    product_qty = remaining_qty
-                    workorder = record.production_id.workorder_ids.create({
-                        'name': name,
-                        'product_id': record.product_id.id,
-                        'product_qty': product_qty,
-                        'workcenter_id': record.workcenter_id.id,
-                        'product_uom_id': record.product_id.uom_id.id,
-                        'state': 'ready',
-                        'remaining_qty' : remaining_qty,
-                    })
-                    workorders.append(workorder.id)
+                    for i in range(qty_per_wo):
+                        name = '%s (Split %s)' % (workorder.name, i + 1)
+                        product_qty = capacity
+                        new_workorder = workorder.copy({
+                            'name': name,
+                            'product_id': workorder.product_id.id,
+                            'product_qty': product_qty,
+                            'workcenter_id': workorder.workcenter_id.id,
+                            'product_uom_id': workorder.product_id.uom_id.id,
+                            'state': 'ready',
+                            'remaining_qty' : capacity,
+                        })
+                        workorders.append(new_workorder.id)
 
-                    print("Total Quantity:", total_qty)
-                    print("Work Center Capacity:", capacity)
-                    print("Quantity per Work Order:", qty_per_wo)
-                    print("Remaining Quantity:", remaining_qty)
+                    if remaining_qty > 0:
+                        name = '%s (Split %s)' % (workorder.name, qty_per_wo + 1)
+                        product_qty = remaining_qty
+                        new_workorder = workorder.copy({
+                            'name': name,
+                            'product_id': workorder.product_id.id,
+                            'product_qty': product_qty,
+                            'workcenter_id': workorder.workcenter_id.id,
+                            'product_uom_id': workorder.product_id.uom_id.id,
+                            'state': 'ready',
+                            'remaining_qty' : remaining_qty,
+                        })
+
+                        workorders.append(new_workorder.id)
+
+                        print("Total Quantity:", total_qty)
+                        print("Work Center Capacity:", capacity)
+                        print("Quantity per Work Order:", qty_per_wo)
+                        print("Remaining Quantity:", remaining_qty)
 
 
     @api.depends('production_detailed_vals_ids')
     def _compute_counter(self):
         for wizard in self:
             wizard.qty_to_split = len(wizard.production_detailed_vals_ids)
-
     @api.depends('qty_to_split')
     def _compute_details(self):
         for wizard in self:
