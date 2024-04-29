@@ -11,7 +11,6 @@ class MrpProduction(models.Model):
     document_id = fields.Many2one('msp.documents.id', string="Documents ID", copy=False, readonly=False)
     doc_ids = fields.Char(related='document_id.doc_name', string="Document ID")
     partner_id = fields.Many2one('res.partner', 'Customer')
-    # split_workorder = fields.Many2one('mrp.split.work.order')
     sample_dev_id = fields.Many2one('msp.sample.dev', 'Sample Development', store=True)
     sample_style = fields.Char(related='sample_dev_id.style', string="Style")
     warna_sample = fields.Char(related='sample_dev_id.warna', string="Warna")
@@ -137,14 +136,14 @@ class MrpSplitWorkOrder(models.TransientModel):
     _name ='mrp.split.work.order'
     _description = 'Split Work Order'
     
+    production_detailed_vals_ids = fields.One2many('mrp.production.split.line', 'mrp_production_split_id', 'Split Details', compute="_compute_details", store=True, readonly=False)
+    production_split_multi = fields.Many2one('mrp.production.split.multi', 'Split Productions')
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order', store=True, copy=False)
     product_qty = fields.Float(related='production_id.product_qty')
     product_id = fields.Many2one(related='production_id.product_id', string='Product')
-    workorder_id = fields.Many2one('mrp.workorder', string='Work Order')
+    # workorder_id = fields.Many2one('mrp.workorder', string='Work Order')
     product_uom_id = fields.Many2one(related='production_id.product_uom_id')
     qty_to_split = fields.Integer(string="Split Into ?",readonly=False,  copy=False, store=True, compute="_compute_counter")
-    production_detailed_vals_ids = fields.One2many('mrp.production.split.line', 'mrp_production_split_id', 'Split Details', compute="_compute_details", store=True, readonly=False)
-    production_split_multi = fields.Many2one('mrp.production.split.multi', 'Split Productions')
     quantity_to_produce = fields.Float(related='production_id.product_qty', string='Quantity To Produce')
     workcenter_id = fields.Many2one(related='workorder_ids.workcenter_id', string="Work Center")
     workcenter_capacity = fields.Float(related='workcenter_id.capacity', string="Work Center Capacity")
@@ -193,9 +192,9 @@ class MrpSplitWorkOrder(models.TransientModel):
 
                         workorders.append(new_workorder.id)
 
-                        print("Total Quantity:", total_qty)
+                        print("Quantity To Produce:", total_qty)
                         print("Work Center Capacity:", capacity)
-                        print("Quantity per Work Order:", qty_per_wo)
+                        print("Total Split:", qty_per_wo)
                         print("Remaining Quantity:", remaining_qty)
 
 
