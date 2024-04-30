@@ -6,7 +6,7 @@
     "website": "",
     "license": "AGPL-3",
     "category": "Manufacturing",
-    "depends": ["mrp","product","stock", "msp_document_id", "msp_sample"],
+    "depends": ["mrp","product","stock", "msp_document_id", "msp_sample", "sale_stock"],
     "data": [
         "security/ir.model.access.csv",
         "report/report_menu.xml",
