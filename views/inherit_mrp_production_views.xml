@@ -1,38 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
-
         <record id="action_mrp_production_split_multi" model="ir.actions.act_window">
             <field name="name">Split productions</field>
             <field name="res_model">mrp.production.split.multi</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
         </record>
-
         <record id="action_mrp_production_split" model="ir.actions.act_window">
-            <field name="name">Split production</field>
+            <field name="name">Split Production</field>
             <field name="res_model">mrp.split.work.order</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
         </record>
-
         <record id="view_mrp_production_form_inherited" model="ir.ui.view">
             <field name="name">mrp.production.form.inherited</field>
             <field name="model">mrp.production</field>
             <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
             <field name="arch" type="xml">
                 <header>
-                        <button class="btn-primary" string="Split Work Order" icon="fa-scissors" type="object" name="action_split"/>
+                        <button class="btn-primary" string="Split" icon="fa-scissors" type="object" name="action_split"/>
                 </header>
                 <xpath expr="//field[@name='user_id']" position="after">
                     <field name="sample_dev_id" invisible="1"/>
                     <field name="partner_id"/>
+                    <field name="kkp_div"/>
                     <field name="sample_style" invisible="1"/>
                     <field name="warna_sample" invisible="1"/>
                     <field name="sample_size" invisible="1"/>
                 </xpath>
+                <xpath expr="//field[@name='bom_id']" position="before">
+                    <field name="qty_available_to_produce"/>
+                </xpath>
+                <xpath expr="//button[@name='action_assign']" position="replace">
+                    <button name="action_assign" states="confirmed,progress" string="Check Availability" type="object" class="oe_highlight"/>
+                </xpath>
             </field>
         </record>
-
     </data>
 </odoo>
