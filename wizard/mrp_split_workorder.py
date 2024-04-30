@@ -1,4 +1,6 @@
 from odoo import models, fields, api, _
+from collections import defaultdict
+from odoo.addons import decimal_precision as dp
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare, float_round, float_is_zero, format_datetime
 from odoo.addons.mrp.models.mrp_production import MrpProduction
@@ -15,7 +17,8 @@ class MrpProduction(models.Model):
     sample_style = fields.Char(related='sample_dev_id.style', string="Style")
     warna_sample = fields.Char(related='sample_dev_id.warna', string="Warna")
     sample_size = fields.Float(related='sample_dev_id.size', string="Size")
-
+    kkp_div = fields.Integer(string="KKP Div", default=1)
+    
     def _get_sample_dev_id(self):
         for production in self:
             product_id = production.product_id.id
@@ -132,6 +135,74 @@ class MrpProduction(models.Model):
     
     #         return res
 
+   
+    @api.depends('state', 'move_raw_ids')
+    def _compute_qty_to_produce(self):
+        """Used to shown the quantity available to produce considering the
+        reserves in the moves related
+        """
+        for record in self:
+            total = record.get_qty_available_to_produce()
+            record.qty_available_to_produce = total
+
+    qty_available_to_produce = fields.Float(
+        compute='_compute_qty_to_produce', readonly=True,
+        digits=dp.get_precision('Product Unit of Measure'),
+        help='Quantity available to produce considering the quantities '
+        'reserved by the order')
+
+   
+    def get_qty_available_to_produce(self):
+        """Compute the total available to produce considering
+        the lines reserved
+        """
+        self.ensure_one()
+
+        quantity = self.product_uom_id._compute_quantity(
+            self.product_qty, self.bom_id.product_uom_id)
+        if not quantity:
+            return 0
+
+        lines = self.bom_id.explode(self.product_id, quantity)[1]
+
+        result, lines_dict = defaultdict(int), defaultdict(int)
+        for res in self.move_raw_ids.filtered(lambda move: not move.is_done):
+            result[res.product_id.id] += (res.reserved_availability -
+                                          res.quantity_done)
+
+        for line, line_data in lines:
+            if line.product_id.type in ('service', 'consu'):
+                continue
+            lines_dict[line.product_id.id] += line_data['qty'] / quantity
+        qty = [(result[key] / val) for key, val in lines_dict.items() if val]
+        return (float_round(
+            min(qty) * self.bom_id.product_qty, 0, rounding_method='DOWN') if
+            qty and min(qty) >= 0.0 else 0.0)
+
+    def _workorders_create(self, bom, bom_data):
+        workorders = super()._workorders_create(bom, bom_data)
+        ready_wk = workorders.filtered(lambda wk: wk.state == 'ready')
+        moves = self.move_raw_ids.filtered(lambda mv: mv.workorder_id)
+        moves.write({'workorder_id': ready_wk.id})
+        return workorders
+
+    def default_get(self, fields):
+        fields.append('product_qty')
+        res = super(MrpProduction, self).default_get(fields)
+        if self._context.get('active_id') and res.get('product_qty'):
+            production = self.env['mrp.production'].browse(
+                self._context['active_id'])
+            res['product_qty'] = (res['product_qty'] > 0 and
+                                  production.qty_available_to_produce)
+        return res
+
+    def do_produce(self):
+        self.ensure_one()
+        if self.product_qty > self.production_id.qty_available_to_produce:
+            raise UserError(_('''You cannot produce more than available to
+                                produce for this order'''))
+        return super(MrpProduction, self).do_produce()
+
 class MrpSplitWorkOrder(models.TransientModel):
     _name ='mrp.split.work.order'
     _description = 'Split Work Order'
@@ -141,7 +212,6 @@ class MrpSplitWorkOrder(models.TransientModel):
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order', store=True, copy=False)
     product_qty = fields.Float(related='production_id.product_qty')
     product_id = fields.Many2one(related='production_id.product_id', string='Product')
-    # workorder_id = fields.Many2one('mrp.workorder', string='Work Order')
     product_uom_id = fields.Many2one(related='production_id.product_uom_id')
     qty_to_split = fields.Integer(string="Split Into ?",readonly=False,  copy=False, store=True, compute="_compute_counter")
     quantity_to_produce = fields.Float(related='production_id.product_qty', string='Quantity To Produce')
@@ -172,7 +242,6 @@ class MrpSplitWorkOrder(models.TransientModel):
                             'product_qty': product_qty,
                             'workcenter_id': workorder.workcenter_id.id,
                             'product_uom_id': workorder.product_id.uom_id.id,
-                            'state': 'ready',
                             'remaining_qty' : capacity,
                         })
                         workorders.append(new_workorder.id)
@@ -186,7 +255,6 @@ class MrpSplitWorkOrder(models.TransientModel):
                             'product_qty': product_qty,
                             'workcenter_id': workorder.workcenter_id.id,
                             'product_uom_id': workorder.product_id.uom_id.id,
-                            'state': 'ready',
                             'remaining_qty' : remaining_qty,
                         })
 
@@ -196,7 +264,6 @@ class MrpSplitWorkOrder(models.TransientModel):
                         print("Work Center Capacity:", capacity)
                         print("Total Split:", qty_per_wo)
                         print("Remaining Quantity:", remaining_qty)
-
 
     @api.depends('production_detailed_vals_ids')
     def _compute_counter(self):
@@ -247,3 +314,5 @@ class MrpProductionSplitLine(models.TransientModel):
     date = fields.Datetime('Schedule Date')
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order')
     product_id = fields.Many2one(related='production_id.product_id')
+
+   
