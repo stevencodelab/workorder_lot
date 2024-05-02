@@ -1,8 +1,9 @@
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError
+from datetime import datetime
 
 
-class MrpWorkOrderInherit(models.Model):
+class MrpWorkOrder(models.Model):
     _inherit='mrp.workorder'
     _description='Mrp Work Order Inherit'
 
@@ -10,21 +11,37 @@ class MrpWorkOrderInherit(models.Model):
     product_qty = fields.Float(related='production_id.product_qty')
     remaining_qty = fields.Float(string='Quantity After Split')
 
+    def button_finish(self):
+        res = super(MrpWorkOrder, self).button_finish()
+        end_date = datetime.now()
+        for workorder in self:
+            if workorder.state in ('done', 'cancel'):
+                continue
+            workorder.end_all()
+            vals = {
+                'qty_produced': workorder.qty_produced or workorder.qty_producing or workorder.qty_production,
+                'state': 'done',
+                'date_finished': end_date,
+                'date_planned_finished': end_date
+            }
+            if not workorder.date_start:
+                vals['date_start'] = end_date
+            if not workorder.date_planned_start or end_date < workorder.date_planned_start:
+                vals['date_planned_start'] = end_date
+            workorder.with_context(bypass_duration_calculation=True).write(vals)
 
-    def record_production(self):
-        res = super(MrpWorkorder, self).record_production()
-        for move in self.move_raw_ids.filtered(
-                lambda mov: mov.state not in ('done', 'cancel')
-                and mov.quantity_done > 0):
-            context = self._context.copy()
-            context['mrp_record_production'] = True
-            move.with_context(context)._action_done()
-        if not self.next_work_order_id:
-            finished_moves = self.production_id.move_finished_ids
-            production_moves = finished_moves.filtered(
-                lambda x: (x.product_id.id == self.production_id.product_id.id)
-                and (x.state not in ('done', 'cancel'))
-                and x.quantity_done > 0)
-            for production_move in production_moves:
-                production_move._action_done()
+            # Menambahkan logika untuk menentukan Work Order berikutnya yang "Ready"
+            next_work_order = workorder._get_next_work_order()
+            if next_work_order:
+                next_work_order.state = 'ready'
+
+        return True
         return res
+
+    def _get_next_work_order(self):
+        # Mengembalikan Work Order berikutnya yang "Ready" untuk dilanjutkan
+        next_work_order = self.env['mrp.workorder'].search([
+            ('production_id', '=', self.production_id.id),
+            ('state', '=', 'pending'),
+        ], limit=1, order='sequence')
+        return next_work_order
