@@ -136,72 +136,74 @@ class MrpProduction(models.Model):
     #         return res
 
    
-    @api.depends('state', 'move_raw_ids')
-    def _compute_qty_to_produce(self):
-        """Used to shown the quantity available to produce considering the
-        reserves in the moves related
-        """
-        for record in self:
-            total = record.get_qty_available_to_produce()
-            record.qty_available_to_produce = total
+    # @api.depends('state', 'move_raw_ids')
+    # def _compute_qty_to_produce(self):
+    #     """Used to shown the quantity available to produce considering the
+    #     reserves in the moves related
+    #     """
+    #     for record in self:
+    #         total = record.get_qty_available_to_produce()
+    #         record.qty_available_to_produce = total
 
-    qty_available_to_produce = fields.Float(
-        compute='_compute_qty_to_produce', readonly=True,
-        digits=dp.get_precision('Product Unit of Measure'),
-        help='Quantity available to produce considering the quantities '
-        'reserved by the order')
+    # qty_available_to_produce = fields.Float(
+    #     compute='_compute_qty_to_produce', readonly=True,
+    #     digits=dp.get_precision('Product Unit of Measure'),
+    #     help='Quantity available to produce considering the quantities '
+    #     'reserved by the order')
 
    
-    def get_qty_available_to_produce(self):
-        """Compute the total available to produce considering
-        the lines reserved
-        """
-        self.ensure_one()
+    # def get_qty_available_to_produce(self):
+    #     """Compute the total available to produce considering
+    #     the lines reserved
+    #     """
+    #     self.ensure_one()
 
-        quantity = self.product_uom_id._compute_quantity(
-            self.product_qty, self.bom_id.product_uom_id)
-        if not quantity:
-            return 0
+    #     quantity = self.product_uom_id._compute_quantity(
+    #         self.product_qty, self.bom_id.product_uom_id)
+    #     if not quantity:
+    #         return 0
 
-        lines = self.bom_id.explode(self.product_id, quantity)[1]
+    #     lines = self.bom_id.explode(self.product_id, quantity)[1]
 
-        result, lines_dict = defaultdict(int), defaultdict(int)
-        for res in self.move_raw_ids.filtered(lambda move: not move.is_done):
-            result[res.product_id.id] += (res.reserved_availability -
-                                          res.quantity_done)
+    #     result, lines_dict = defaultdict(int), defaultdict(int)
+    #     for res in self.move_raw_ids.filtered(lambda move: not move.is_done):
+    #         result[res.product_id.id] += (res.reserved_availability -
+    #                                       res.quantity_done)
 
-        for line, line_data in lines:
-            if line.product_id.type in ('service', 'consu'):
-                continue
-            lines_dict[line.product_id.id] += line_data['qty'] / quantity
-        qty = [(result[key] / val) for key, val in lines_dict.items() if val]
-        return (float_round(
-            min(qty) * self.bom_id.product_qty, 0, rounding_method='DOWN') if
-            qty and min(qty) >= 0.0 else 0.0)
+    #     for line, line_data in lines:
+    #         if line.product_id.type in ('service', 'consu'):
+    #             continue
+    #         lines_dict[line.product_id.id] += line_data['qty'] / quantity
+    #     qty = [(result[key] / val) for key, val in lines_dict.items() if val]
+    #     return (float_round(
+    #         min(qty) * self.bom_id.product_qty, 0, rounding_method='DOWN') if
+    #         qty and min(qty) >= 0.0 else 0.0)
 
-    def _workorders_create(self, bom, bom_data):
-        workorders = super()._workorders_create(bom, bom_data)
-        ready_wk = workorders.filtered(lambda wk: wk.state == 'ready')
-        moves = self.move_raw_ids.filtered(lambda mv: mv.workorder_id)
-        moves.write({'workorder_id': ready_wk.id})
-        return workorders
+    # def _workorders_create(self, bom, bom_data):
+    #     workorders = super()._workorders_create(bom, bom_data)
+    #     ready_wk = workorders.filtered(lambda wk: wk.state == 'ready')
+    #     moves = self.move_raw_ids.filtered(lambda mv: mv.workorder_id)
+    #     moves.write({'workorder_id': ready_wk.id})
+    #     return workorders
 
-    def default_get(self, fields):
-        fields.append('product_qty')
-        res = super(MrpProduction, self).default_get(fields)
-        if self._context.get('active_id') and res.get('product_qty'):
-            production = self.env['mrp.production'].browse(
-                self._context['active_id'])
-            res['product_qty'] = (res['product_qty'] > 0 and
-                                  production.qty_available_to_produce)
-        return res
+    # def default_get(self, fields):
+    #     fields.append('product_qty')
+    #     res = super(MrpProduction, self).default_get(fields)
+    #     if self._context.get('active_id') and res.get('product_qty'):
+    #         production = self.env['mrp.production'].browse(
+    #             self._context['active_id'])
+    #         res['product_qty'] = (res['product_qty'] > 0 and
+    #                               production.qty_available_to_produce)
+    #     return res
 
-    def do_produce(self):
-        self.ensure_one()
-        if self.product_qty > self.production_id.qty_available_to_produce:
-            raise UserError(_('''You cannot produce more than available to
-                                produce for this order'''))
-        return super(MrpProduction, self).do_produce()
+    # def do_produce(self):
+    #     self.ensure_one()
+    #     if self.product_qty > self.production_id.qty_available_to_produce:
+    #         raise UserError(_('''You cannot produce more than available to
+    #                             produce for this order'''))
+    #     return super(MrpProduction, self).do_produce()
+
+    
 
 class MrpSplitWorkOrder(models.TransientModel):
     _name ='mrp.split.work.order'
@@ -223,7 +225,7 @@ class MrpSplitWorkOrder(models.TransientModel):
     the logic in this function still need to be fix."""
     
     def action_split_workorder(self):
-        workorders = []
+        workorders = self.env['mrp.workorder']
         for record in self:
             for workorder in record.workorder_ids:
                 total_qty = workorder.product_qty
@@ -244,7 +246,7 @@ class MrpSplitWorkOrder(models.TransientModel):
                             'product_uom_id': workorder.product_id.uom_id.id,
                             'remaining_qty' : capacity,
                         })
-                        workorders.append(new_workorder.id)
+                        workorders += new_workorder
 
                     if remaining_qty > 0:
                         name = '%s (Split %s)' % (workorder.name, qty_per_wo + 1)
@@ -258,12 +260,16 @@ class MrpSplitWorkOrder(models.TransientModel):
                             'remaining_qty' : remaining_qty,
                         })
 
-                        workorders.append(new_workorder.id)
+                        workorders += new_workorder
 
-                        print("Quantity To Produce:", total_qty)
-                        print("Work Center Capacity:", capacity)
-                        print("Total Split:", qty_per_wo)
-                        print("Remaining Quantity:", remaining_qty)
+                    """Hapus Work Order asli menggunakan `unlink` sehingga 
+                    hanya menampilkan Work Order hasil split"""
+                    workorder.unlink()
+
+                    print("Quantity To Produce:", total_qty)
+                    print("Work Center Capacity:", capacity)
+                    print("Total Split:", qty_per_wo)
+                    print("Remaining Quantity:", remaining_qty)
 
     @api.depends('production_detailed_vals_ids')
     def _compute_counter(self):
