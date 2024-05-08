@@ -17,16 +17,6 @@ class MrpWorkOrder(models.Model):
         next_work_order = self.find_next_work_order()
         if next_work_order:
             next_work_order.button_start()
-        else:
-            # Cek apakah ini tahap terakhir dalam produksi
-            if not self.find_pending_work_order() and not self.find_ready_work_order():
-                # Tambahkan quantity yang sudah selesai ke quantity total
-                qty_done = sum(wo.qty_producing for wo in production.workorder_ids)
-                production.product_qty_done += qty_done
-                # Restart produksi dari tahap pertama
-                first_work_order = self.find_first_work_order()
-                if first_work_order:
-                    first_work_order.button_start()
 
     def find_first_work_order(self):
         first_work_order = self.env['mrp.workorder'].search([
