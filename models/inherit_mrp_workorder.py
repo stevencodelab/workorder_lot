@@ -17,10 +17,15 @@ class MrpWorkOrder(models.Model):
         next_work_order = self.find_next_work_order()
         if next_work_order:
             next_work_order.button_start()
-
+        else:
+            if not self.find_pending_work_order() and not self.find_ready_work_order():
+                first_work_order = self.find_first_work_order()
+                if first_work_order:
+                    first_work_order.button_start()
+    
     def find_first_work_order(self):
         first_work_order = self.env['mrp.workorder'].search([
-            ('production_id', '=', self.production_id.id),
+            ('production_id', '=', production_id.id),
             ('state', '=', 'ready'),
             ('workcenter_id', '>', self.workcenter_id.id),
         ], limit=1, order='workcenter_id')
@@ -28,7 +33,7 @@ class MrpWorkOrder(models.Model):
 
     def find_next_work_order(self):
         next_work_order = self.env['mrp.workorder'].search([
-            ('production_id', '=', self.production_id.id),
+            ('production_id', '=', production_id.id),
             ('state', '=', 'ready'),
             ('workcenter_id', '>', self.workcenter_id.id),
         ], limit=1, order='workcenter_id')
@@ -37,12 +42,12 @@ class MrpWorkOrder(models.Model):
             return next_work_order
         else:
             pending_work_order = self.env['mrp.workorder'].search([
-                ('production_id', '=', self.production_id.id),
+                ('production_id', '=', production_id.id),
                 ('state', '=', 'pending'),
                 ('workcenter_id', '>', self.workcenter_id.id),
             ], limit=1, order='workcenter_id')
-
             return pending_work_order
+
 
     def find_pending_work_order(self):
         pending_work_order = self.env['mrp.workorder'].search([
