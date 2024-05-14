@@ -14,6 +14,8 @@ class MrpWorkOrder(models.Model):
     def button_finish(self):
         super(MrpWorkOrder, self).button_finish()
         production = self.production_id
+
+        # Cari work order berikutnya
         next_work_order = self.find_next_work_order()
         if next_work_order:
             next_work_order.button_start()
@@ -22,43 +24,52 @@ class MrpWorkOrder(models.Model):
                 first_work_order = self.find_first_work_order()
                 if first_work_order:
                     first_work_order.button_start()
-    
+
+        # Jika work order saat ini di Packing dan selesai, tambahkan ke qty_produced
+        if self.workcenter_id.name == 'PACKING' and self.state == 'done':
+            produced_qty = self.qty_producing
+            production.write({
+                'qty_produced': production.qty_produced + produced_qty
+            })
+
     def find_first_work_order(self):
-        first_work_order = self.env['mrp.workorder'].search([
-            ('production_id', '=', production_id.id),
-            ('state', '=', 'ready'),
-            ('workcenter_id', '>', self.workcenter_id.id),
-        ], limit=1, order='workcenter_id')
-        return first_work_order
+        for record in self:
+            first_work_order = self.env['mrp.workorder'].search([
+                ('production_id', '=', record.production_id.id),
+                ('state', '=', 'ready'),
+                ('workcenter_id', '>', record.workcenter_id.id),
+            ], limit=1, order='workcenter_id')
+            if first_work_order:
+                return first_work_order
+        return False
 
     def find_next_work_order(self):
-        next_work_order = self.env['mrp.workorder'].search([
-            ('production_id', '=', production_id.id),
-            ('state', '=', 'ready'),
-            ('workcenter_id', '>', self.workcenter_id.id),
-        ], limit=1, order='workcenter_id')
-
-        if next_work_order:
-            return next_work_order
-        else:
-            pending_work_order = self.env['mrp.workorder'].search([
-                ('production_id', '=', production_id.id),
+        for record in self:
+            next_work_order = self.env['mrp.workorder'].search([
+                ('production_id', '=', record.production_id.id),
                 ('state', '=', 'pending'),
-                ('workcenter_id', '>', self.workcenter_id.id),
+                ('workcenter_id', '>', record.workcenter_id.id),
             ], limit=1, order='workcenter_id')
-            return pending_work_order
-
+            if next_work_order:
+                return next_work_order
+        return False
 
     def find_pending_work_order(self):
-        pending_work_order = self.env['mrp.workorder'].search([
-            ('production_id', '=', self.production_id.id),
-            ('state', '=', 'pending'),
-        ])
-        return pending_work_order
+        for record in self:
+            pending_work_order = self.env['mrp.workorder'].search([
+                ('production_id', '=', record.production_id.id),
+                ('state', '=', 'pending'),
+            ], limit=1)
+            if pending_work_order:
+                return pending_work_order
+        return False
 
     def find_ready_work_order(self):
-        ready_work_order = self.env['mrp.workorder'].search([
-            ('production_id', '=', self.production_id.id),
-            ('state', '=', 'ready'),
-        ])
-        return ready_work_order
+        for record in self:
+            ready_work_order = self.env['mrp.workorder'].search([
+                ('production_id', '=', record.production_id.id),
+                ('state', '=', 'ready'),
+            ], limit=1)
+            if ready_work_order:
+                return ready_work_order
+        return False
