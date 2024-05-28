@@ -3,14 +3,12 @@ from odoo.exceptions import UserError
 from datetime import datetime
 
 class MrpWorkOrder(models.Model):
-    _inherit='mrp.workorder'
-    _description='Mrp Work Order Inherit'
-
+    _inherit = 'mrp.workorder'
+    _description = 'Mrp Work Order Inherit'
 
     production_id = fields.Many2one('mrp.production', 'Manufacturing Order')
     product_qty = fields.Float(related='production_id.product_qty')
     remaining_qty = fields.Float(string='Quantity After Split')
-    
 
     def button_finish(self):
         res = super(MrpWorkOrder, self).button_finish()
@@ -24,8 +22,8 @@ class MrpWorkOrder(models.Model):
         # Cari work order yang ready dan mulai jika ada
         ready_work_order = self.find_ready_work_order()
         if ready_work_order:
-            ready_work_order.button_start()    
-        
+            ready_work_order
+
         for record in self:
             # Jika work order saat ini di Packing dan selesai, tambahkan ke qty_produced
             if record.workcenter_id.name == 'PACKING' and record.state == 'done':
@@ -46,13 +44,11 @@ class MrpWorkOrder(models.Model):
                 product_qty = production.product_qty
 
                 # Pastikan total_remaining_qty tidak melebihi product_qty pada MO
-                if total_remaining_qty > product_qty:
-                    total_remaining_qty = product_qty
 
                 production.write({
-                    'qty_produced': total_remaining_qty
+                    'qty_producing': total_remaining_qty
                 })
-
+    
         return res
 
     def find_first_work_order(self):
@@ -86,7 +82,7 @@ class MrpWorkOrder(models.Model):
             if pending_work_order:
                 return pending_work_order
         return False
-    
+
     def find_ready_work_order(self):
         for record in self:
             ready_work_order = self.env['mrp.workorder'].search([
