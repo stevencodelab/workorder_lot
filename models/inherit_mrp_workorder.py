@@ -18,7 +18,7 @@ class MrpWorkOrder(models.Model):
         next_work_order = self.find_next_work_order()
         if next_work_order:
             next_work_order.button_start()
-
+    
         # Cari work order yang ready dan mulai jika ada
         ready_work_order = self.find_ready_work_order()
         if ready_work_order:
@@ -46,11 +46,11 @@ class MrpWorkOrder(models.Model):
                 # Pastikan total_remaining_qty tidak melebihi product_qty pada MO
 
                 production.write({
-                    'qty_producing': record.remaining_qty
+                    'qty_producing': remaining_qty
                 })
     
         return res
-
+    
     def find_first_work_order(self):
         for record in self:
             first_work_order = self.env['mrp.workorder'].search([
@@ -82,7 +82,7 @@ class MrpWorkOrder(models.Model):
             if pending_work_order:
                 return pending_work_order
         return False
-
+    
     def find_ready_work_order(self):
         for record in self:
             ready_work_order = self.env['mrp.workorder'].search([
