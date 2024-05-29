@@ -46,7 +46,7 @@ class MrpWorkOrder(models.Model):
                 # Pastikan total_remaining_qty tidak melebihi product_qty pada MO
 
                 production.write({
-                    'qty_producing': total_remaining_qty
+                    'qty_producing': record.remaining_qty
                 })
     
         return res
@@ -61,7 +61,7 @@ class MrpWorkOrder(models.Model):
             if first_work_order:
                 return first_work_order
         return False
-
+    
     def find_next_work_order(self):
         for record in self:
             next_work_order = self.env['mrp.workorder'].search([
@@ -92,3 +92,4 @@ class MrpWorkOrder(models.Model):
             if ready_work_order:
                 return ready_work_order
         return False
+
