@@ -1,3 +1,4 @@
+import logging
 from odoo import models, fields, api, _
 from collections import defaultdict
 from odoo.addons import decimal_precision as dp
@@ -5,6 +6,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare, float_round, float_is_zero, format_datetime
 from odoo.addons.mrp.models.mrp_production import MrpProduction
 
+_logger = logging.getLogger(__name__)
 
 class MrpProduction(models.Model):
     _inherit = "mrp.production"
@@ -18,6 +20,7 @@ class MrpProduction(models.Model):
     warna_sample = fields.Char(related='sample_dev_id.warna', string="Warna")
     sample_size = fields.Float(related='sample_dev_id.size', string="Size")
     kkp_div = fields.Integer(string="KKP Div", default=1)
+    qty_produced = fields.Float(string='Produced Quantity', default=0.0)
     
     def _get_sample_dev_id(self):
         for production in self:
@@ -203,7 +206,25 @@ class MrpProduction(models.Model):
     #                             produce for this order'''))
     #     return super(MrpProduction, self).do_produce()
 
+    def update_product_qty(self):
+        self.product_qty = sum(self.workorder_ids.filtered(lambda wo: wo.state == 'done').mapped('qty_produced'))
     
+    # Override method/function button_mark_done and set the workorder state to done (Finished)
+    def button_mark_done(self):
+        _logger.info('Override method button_mark_done called')
+        
+        # Call the original button_mark_done method
+        res = super(MrpProduction, self).button_mark_done()
+        
+        # Ensure work orders are not set to 'cancel'
+        for workorder in self.workorder_ids:
+            _logger.info(f'Work Order {workorder.id} status before: {workorder.state}')
+            if workorder.state not in ('done', 'cancel'):
+                workorder.duration_expected = workorder._get_duration_expected()
+                workorder.state = 'done'
+            _logger.info(f'Work Order {workorder.id} status after: {workorder.state}')
+        
+        return res
 
 class MrpSplitWorkOrder(models.TransientModel):
     _name ='mrp.split.work.order'
@@ -221,8 +242,8 @@ class MrpSplitWorkOrder(models.TransientModel):
     workcenter_capacity = fields.Float(related='workcenter_id.capacity', string="Work Center Capacity")
     workorder_ids = fields.One2many(related='production_id.workorder_ids')
     
-    """function for split the work order into smaller based on the qty_to_split.
-    the logic in this function still need to be fix."""
+    """function untuk melakukan proses split work order menjadi beberapa bagian 
+    berdasarkan kapasitas dari work center."""
     
     def action_split_workorder(self):
         workorders = self.env['mrp.workorder']
