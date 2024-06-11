@@ -210,20 +210,78 @@ class MrpProduction(models.Model):
         self.product_qty = sum(self.workorder_ids.filtered(lambda wo: wo.state == 'done').mapped('qty_produced'))
     
     # Override method/function button_mark_done and set the workorder state to done (Finished)
-    def button_mark_done(self):
-        _logger.info('Override method button_mark_done called')
+    # def button_mark_done(self):
+    #     _logger.info('Override method button_mark_done called')
         
-        # Call the original button_mark_done method
-        res = super(MrpProduction, self).button_mark_done()
+    #     # Call the original button_mark_done method
+    #     res = super(MrpProduction, self).button_mark_done()
+    #     # Check if the work order is already in the "Finished" state
+    #     for workorder in self.workorder_ids:
+    #         if workorder.state == 'done':
+    #             # Prevent the work order from being cancelled
+    #             workorder.state = 'done'
+    #             break
         
-        # Ensure work orders are not set to 'cancel'
-        for workorder in self.workorder_ids:
-            _logger.info(f'Work Order {workorder.id} status before: {workorder.state}')
-            if workorder.state not in ('done', 'cancel'):
-                workorder.duration_expected = workorder._get_duration_expected()
-                workorder.state = 'done'
-            _logger.info(f'Work Order {workorder.id} status after: {workorder.state}')
-        
+    #     return res
+
+class MrpProductionBackOrder(models.TransientModel):
+    _inherit = 'mrp.production.backorder'
+
+    move_finished_ids = fields.One2many(
+        'stock.move', 'production_id', 'Finished Products',
+        copy=False, states={'done': [('readonly', True)], 'cancel': [('readonly', True)]},
+        domain=[('scrapped', '=', False)])
+
+    # def action_backorder(self):
+    #     res = super(MrpProductionBackOrder, self).action_backorder()
+
+    #     backorder_moves_vals = []
+    #     for move in self.move_finished_ids.filtered(lambda x: x.state not in ('done', 'done')):
+    #         if move.product_uom_qty <= 0.0:
+    #             continue
+    #         backorder_moves_vals.append(move._prepare_move_copy_values(move.product_uom_qty))
+    #     if backorder_moves_vals:
+    #         backorder_production = self.copy({
+    #             'move_raw_ids': [],
+    #             'move_finished_ids': backorder_moves_vals,
+    #             'backorder_id': self.id,
+    #             'date_planned_start': False,
+    #             'date_planned_finished': False,
+    #             'state': 'draft',
+    #             'workorder_ids': [],
+    #             'move_dest_ids': [],
+    #         })
+    #         backorder_production._onchange_move_raw()
+    #         backorder_production.action_assign()
+    #     return res
+
+    def action_backorder(self):
+        res = super(MrpProduction, self).action_backorder()
+
+        backorder_move_vals = []
+        moves_to_backorder = self.move_finished_ids.filtered(lambda x: x.state not in ('done', 'cancel') and x.product_uom_qty > 0)
+
+        for move in moves_to_backorder:
+            backorder_move_vals.append(move._prepare_move_copy_values(move.product_uom_qty))
+
+        if backorder_move_vals:
+            backorder_production = self.copy({
+                'move_raw_ids': [],
+                'move_finished_ids': backorder_move_vals,
+                'backorder_id': self.id,
+                'date_planned_start': False,
+                'date_planned_finished': False,
+                'state': 'draft',
+                'workorder_ids': [],
+                'move_dest_ids': [],
+            })
+            backorder_production._onchange_move_raw()
+            backorder_production.action_assign()
+
+            # Update the original MO to remove the backorder moves and set its state to 'progress'
+            self.move_finished_ids -= moves_to_backorder
+            self.state = 'done'
+
         return res
 
 class MrpSplitWorkOrder(models.TransientModel):
@@ -296,6 +354,7 @@ class MrpSplitWorkOrder(models.TransientModel):
     def _compute_counter(self):
         for wizard in self:
             wizard.qty_to_split = len(wizard.production_detailed_vals_ids)
+
     @api.depends('qty_to_split')
     def _compute_details(self):
         for wizard in self:
